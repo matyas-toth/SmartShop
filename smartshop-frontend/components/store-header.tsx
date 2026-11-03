@@ -15,9 +15,10 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
+import { authClient } from "@/lib/auth-client"
 
 import { Badge } from "@/components/ui/badge"
-import { Button, ButtonStateIcon } from "@/components/ui/button"
+import { Button, ButtonStateIcon, buttonVariants } from "@/components/ui/button"
 import { ButtonGroup, ButtonGroupText } from "@/components/ui/button-group"
 import {
   Command,
@@ -72,9 +73,15 @@ import { removeFromCart, updateCartQuantity, useCart } from "@/lib/cart-store"
 import { useCatalog } from "@/lib/catalog-store"
 import { formatPrice } from "@/lib/products"
 
+const subscribeHydration = () => () => {}
 export function ThemeToggle() {
+  const mounted = React.useSyncExternalStore(
+    subscribeHydration,
+    () => true,
+    () => false
+  )
   const { resolvedTheme, setTheme } = useTheme()
-  const isDark = resolvedTheme === "dark"
+  const isDark = mounted && resolvedTheme === "dark"
 
   return (
     <Tooltip>
@@ -106,7 +113,12 @@ function ProductSearch() {
 
   React.useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+      if (
+        !event.isComposing &&
+        typeof event.key === "string" &&
+        (event.ctrlKey || event.metaKey) &&
+        event.key.toLowerCase() === "k"
+      ) {
         event.preventDefault()
         setOpen((current) => !current)
       }
@@ -123,7 +135,12 @@ function ProductSearch() {
 
   return (
     <>
-      <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
+      <Button
+        aria-label="Keresés"
+        variant="outline"
+        size="sm"
+        onClick={() => setOpen(true)}
+      >
         <HugeiconsIcon
           icon={Search01Icon}
           strokeWidth={2}
@@ -208,9 +225,7 @@ function CartSheet() {
         <SheetHeader>
           <SheetTitle>Kosár</SheetTitle>
           <SheetDescription>
-            {itemCount > 0
-              ? `${itemCount} termék vár a kosaradban.`
-              : "A kosarad jelenleg üres."}
+            {itemCount > 0 ? `${itemCount} termék` : "Üres kosár"}
           </SheetDescription>
         </SheetHeader>
 
@@ -285,10 +300,21 @@ function CartSheet() {
         )}
 
         <SheetFooter>
+          <Link href="/cart" className={buttonVariants()}>
+            Kosár megtekintése
+          </Link>
+          {itemCount > 0 ? (
+            <Link
+              href="/checkout"
+              className={buttonVariants({ variant: "outline" })}
+            >
+              Megrendelés
+            </Link>
+          ) : null}
           <Separator />
           <Item size="sm">
             <ItemContent>
-              <ItemDescription>Fizetendő összesen</ItemDescription>
+              <ItemDescription>Termékek összesen</ItemDescription>
               <ItemTitle className="tabular-nums">
                 {formatPrice(total)}
               </ItemTitle>
@@ -307,26 +333,31 @@ function CartSheet() {
 
 export function StoreHeader() {
   const catalog = useCatalog()
+  const { data: session } = authClient.useSession()
+  const role = (session?.user as { role?: string } | undefined)?.role
 
   return (
     <header>
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
         <Item
           size="xs"
-          className="w-auto"
+          className="w-auto shrink-0"
           render={<Link href="/" aria-label="SmartShop főoldal" />}
         >
-          <ItemMedia variant="icon">
+          <ItemMedia variant="icon" className="hidden sm:flex">
             <HugeiconsIcon icon={Store01Icon} strokeWidth={2} />
           </ItemMedia>
           <ItemContent>
             <ItemTitle>SmartShop</ItemTitle>
-            <ItemDescription className="hidden sm:flex">
-              Okos választás, egyszerű vásárlás
-            </ItemDescription>
           </ItemContent>
         </Item>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
+          <Link
+            href="/account"
+            className={buttonVariants({ variant: "ghost", size: "sm" })}
+          >
+            Fiókom
+          </Link>
           <ProductSearch />
           <ThemeToggle />
           <CartSheet />
@@ -339,17 +370,19 @@ export function StoreHeader() {
             {catalog.categories.map((category) => (
               <NavigationMenuItem key={category.id}>
                 <NavigationMenuLink
-                  render={<Link href={`/#${category.slug}`} />}
+                  render={<Link href={`/category/${category.slug}`} />}
                 >
                   {category.name}
                 </NavigationMenuLink>
               </NavigationMenuItem>
             ))}
-            <NavigationMenuItem>
-              <NavigationMenuLink render={<Link href="/admin" />}>
-                Admin
-              </NavigationMenuLink>
-            </NavigationMenuItem>
+            {role && role !== "CUSTOMER" ? (
+              <NavigationMenuItem>
+                <NavigationMenuLink render={<Link href="/admin" />}>
+                  Admin
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+            ) : null}
           </NavigationMenuList>
         </NavigationMenu>
       </div>

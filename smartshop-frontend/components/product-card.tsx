@@ -1,71 +1,55 @@
 import Link from "next/link"
-
 import { ProductCartButton } from "@/components/product-actions"
 import { ProductIcon } from "@/components/product-icon"
 import { Badge } from "@/components/ui/badge"
-import { buttonVariants } from "@/components/ui/button"
 import {
   Card,
-  CardAction,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { cn } from "@/lib/utils"
-import {
-  formatPrice,
-  getStockLabel,
-  type Category,
-  type Product,
-} from "@/lib/products"
-
+import { formatPrice, getStockLabel, type Product } from "@/lib/products"
 export function ProductCard({
   product,
-  category,
+  eager = false,
 }: {
   product: Product
-  category: Category
+  eager?: boolean
 }) {
   return (
-    <Card className="h-full" interactive>
-      <CardHeader>
-        <CardTitle>{product.name}</CardTitle>
-        <CardDescription>{product.description}</CardDescription>
-        <CardAction>
-          <Badge variant="secondary">{category.name}</Badge>
-        </CardAction>
-      </CardHeader>
-      <CardContent>
+    <Card className="h-full gap-3 py-4" interactive>
+      <CardContent className="px-3 sm:px-4">
         <Link
           href={`/product/${product.slug}`}
           aria-label={`${product.name} részletei`}
         >
-          <ProductIcon icon={product.icon} />
+          <ProductIcon
+            icon={product.icon}
+            image={product.image}
+            name={product.name}
+            ratio={4 / 3}
+            eager={eager}
+          />
         </Link>
       </CardContent>
-      <CardFooter className="mt-auto flex-wrap justify-between gap-3">
-        <div className="flex min-w-0 flex-col gap-1">
-          <CardTitle className="tabular-nums">
-            {formatPrice(product.price)}
-          </CardTitle>
-          <CardDescription>{getStockLabel(product.stock)}</CardDescription>
+      <CardHeader className="px-3 sm:px-4">
+        <CardTitle>
+          <Link href={`/product/${product.slug}`}>{product.name}</Link>
+        </CardTitle>
+      </CardHeader>
+      <CardFooter className="mt-auto flex-col items-stretch gap-3 px-3 sm:px-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <CardTitle>{formatPrice(product.price)}</CardTitle>
+          <Badge variant="secondary">{getStockLabel(product.stock)}</Badge>
         </div>
-        <div className="flex items-center gap-2">
-          <Link
-            href={`/product/${product.slug}`}
-            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-          >
-            Részletek
-          </Link>
-          <ProductCartButton
-            productId={product.id}
-            productName={product.name}
-            disabled={product.stock <= 0}
-            size="sm"
-          />
-        </div>
+        <ProductCartButton
+          productId={product.id}
+          productName={product.name}
+          disabled={product.stock <= 0}
+          size="sm"
+          fullWidth
+        />
       </CardFooter>
     </Card>
   )

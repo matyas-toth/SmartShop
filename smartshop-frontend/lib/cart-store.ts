@@ -1,133 +1,78 @@
 "use client"
-
 import { useSyncExternalStore } from "react"
-
-export type CartItem = {
-  productId: string
-  quantity: number
+import { toast } from "@/components/ui/toast"
+export type CartItem = { productId: string; quantity: number }
+const empty: CartItem[] = []
+let items = empty
+let ready = false
+let started = false
+let queue: Promise<unknown> = Promise.resolve()
+const listeners = new Set<() => void>()
+function emit() {
+  listeners.forEach((listener) => listener())
 }
-
-type StoredCart = {
-  version: 1
-  items: CartItem[]
+export async function refreshCart() {
+  const response = await fetch("/api/cart", { cache: "no-store" })
+  if (!response.ok) throw new Error("A kosár nem tölthető be.")
+  items = await response.json()
+  ready = true
+  emit()
 }
-
-const STORAGE_KEY = "smartshop.cart.v1"
-const CART_EVENT = "smartshop:cart-change"
-const EMPTY_CART: CartItem[] = []
-
-let cachedCart: CartItem[] | undefined
-
-function parseCart(value: string | null): CartItem[] {
-  if (!value) {
-    return EMPTY_CART
-  }
-
-  try {
-    const stored = JSON.parse(value) as Partial<StoredCart>
-
-    if (stored.version !== 1 || !Array.isArray(stored.items)) {
-      return EMPTY_CART
-    }
-
-    return stored.items.filter(
-      (item): item is CartItem =>
-        typeof item?.productId === "string" &&
-        Number.isInteger(item.quantity) &&
-        item.quantity > 0 &&
-        item.quantity <= 99
+function mutate(
+  productId: string,
+  quantity: number | ((current: number) => number)
+) {
+  const operation = queue.then(async () => {
+    if (!ready) await refreshCart()
+    const current = items.find((i) => i.productId === productId)?.quantity ?? 0
+    const value = typeof quantity === "function" ? quantity(current) : quantity
+    const response = await fetch("/api/cart", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        productId,
+        quantity: Math.min(99, Math.max(0, value)),
+      }),
+    })
+    const result = await response.json()
+    if (!response.ok) throw new Error(result.error)
+    items = result
+    emit()
+    return true
+  })
+  queue = operation.catch(() => {})
+  return operation.catch((e) => {
+    toast.add({ title: e.message ?? "A kosár nem menthető.", type: "error" })
+    return false
+  })
+}
+export const addToCart = (id: string) => mutate(id, (current) => current + 1)
+export const updateCartQuantity = (id: string, quantity: number) =>
+  mutate(id, quantity)
+export const removeFromCart = (id: string) => mutate(id, 0)
+function subscribe(listener: () => void) {
+  listeners.add(listener)
+  if (!started) {
+    started = true
+    void refreshCart().catch(() =>
+      toast.add({ title: "A kosár nem tölthető be.", type: "error" })
     )
-  } catch {
-    return EMPTY_CART
   }
-}
-
-function getCartSnapshot(): CartItem[] {
-  if (typeof window === "undefined") {
-    return EMPTY_CART
-  }
-
-  cachedCart ??= parseCart(window.localStorage.getItem(STORAGE_KEY))
-  return cachedCart
-}
-
-function getServerSnapshot(): CartItem[] {
-  return EMPTY_CART
-}
-
-function subscribe(onStoreChange: () => void) {
-  function handleStorage(event: StorageEvent) {
-    if (event.key !== STORAGE_KEY) {
-      return
-    }
-
-    cachedCart = parseCart(event.newValue)
-    onStoreChange()
-  }
-
-  window.addEventListener("storage", handleStorage)
-  window.addEventListener(CART_EVENT, onStoreChange)
-
   return () => {
-    window.removeEventListener("storage", handleStorage)
-    window.removeEventListener(CART_EVENT, onStoreChange)
+    listeners.delete(listener)
   }
 }
-
-function saveCart(items: CartItem[]) {
-  cachedCart = items
-
-  const storedCart: StoredCart = {
-    version: 1,
-    items,
-  }
-
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(storedCart))
-  } catch {
-    // The in-memory cart still works if browser storage is unavailable.
-  }
-
-  window.dispatchEvent(new Event(CART_EVENT))
-}
-
-export function addToCart(productId: string) {
-  const items = getCartSnapshot()
-  const existingItem = items.find((item) => item.productId === productId)
-
-  if (!existingItem) {
-    saveCart([...items, { productId, quantity: 1 }])
-    return
-  }
-
-  saveCart(
-    items.map((item) =>
-      item.productId === productId
-        ? { ...item, quantity: Math.min(item.quantity + 1, 99) }
-        : item
-    )
-  )
-}
-
-export function updateCartQuantity(productId: string, quantity: number) {
-  if (quantity <= 0) {
-    saveCart(getCartSnapshot().filter((item) => item.productId !== productId))
-    return
-  }
-
-  saveCart(
-    getCartSnapshot().map((item) =>
-      item.productId === productId
-        ? { ...item, quantity: Math.min(quantity, 99) }
-        : item
-    )
-  )
-}
-
-export function removeFromCart(productId: string) {
-  saveCart(getCartSnapshot().filter((item) => item.productId !== productId))
-}
-
 export function useCart() {
-  return useSyncExternalStore(subscribe, getCartSnapshot, getServerSnapshot)
+  return useSyncExternalStore(
+    subscribe,
+    () => items,
+    () => empty
+  )
+}
+export function useCartReady() {
+  return useSyncExternalStore(
+    subscribe,
+    () => ready,
+    () => false
+  )
 }

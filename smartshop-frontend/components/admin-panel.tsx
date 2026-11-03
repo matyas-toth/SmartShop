@@ -2,21 +2,16 @@
 
 import * as React from "react"
 import {
-  ArrowLeft01Icon,
   Delete02Icon,
   DragDropVerticalIcon,
   Edit02Icon,
   FolderAddIcon,
-  InformationCircleIcon,
   PackageAddIcon,
   PackageIcon,
-  Store01Icon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
-import Link from "next/link"
 
-import { ThemeToggle } from "@/components/store-header"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { ProductImageUpload } from "@/components/product-image-upload"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,7 +24,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
-import { Button, buttonVariants } from "@/components/ui/button"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardAction,
@@ -42,7 +37,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -68,7 +62,6 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
-import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "@/components/ui/toast"
 import {
@@ -82,13 +75,12 @@ import {
   useCatalog,
 } from "@/lib/catalog-store"
 import { formatPrice, type Category, type Product } from "@/lib/products"
-import { cn } from "@/lib/utils"
 
 function CategoryFormDialog({ category }: { category?: Category }) {
   const [open, setOpen] = React.useState(false)
   const inputId = category ? `category-${category.id}` : "new-category"
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const formData = new FormData(event.currentTarget)
     const name = String(formData.get("name") ?? "").trim()
@@ -98,14 +90,22 @@ function CategoryFormDialog({ category }: { category?: Category }) {
     }
 
     if (category) {
-      updateCategory(category.id, name)
+      try {
+        await updateCategory(category.id, name)
+      } catch {
+        return
+      }
       toast.add({
         title: "Kategória frissítve",
         description: name,
         type: "success",
       })
     } else {
-      addCategory(name)
+      try {
+        await addCategory(name)
+      } catch {
+        return
+      }
       toast.add({
         title: "Kategória létrehozva",
         description: name,
@@ -139,14 +139,15 @@ function CategoryFormDialog({ category }: { category?: Category }) {
         )}
       </DialogTrigger>
       <DialogContent>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+        <form
+          key={category?.name ?? "new"}
+          onSubmit={handleSubmit}
+          className="flex flex-col gap-6"
+        >
           <DialogHeader>
             <DialogTitle>
               {category ? "Kategória szerkesztése" : "Új kategória"}
             </DialogTitle>
-            <DialogDescription>
-              A név automatikusan megjelenik a storefront navigációjában.
-            </DialogDescription>
           </DialogHeader>
           <FieldGroup>
             <Field>
@@ -189,7 +190,7 @@ function ProductFormDialog({
   const [open, setOpen] = React.useState(false)
   const idPrefix = product?.id ?? `new-${defaultCategoryId}`
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const formData = new FormData(event.currentTarget)
     const input = {
@@ -205,14 +206,22 @@ function ProductFormDialog({
     }
 
     if (product) {
-      updateProduct(product.id, input)
+      try {
+        await updateProduct(product.id, input)
+      } catch {
+        return
+      }
       toast.add({
         title: "Termék frissítve",
         description: input.name,
         type: "success",
       })
     } else {
-      addProduct(input)
+      try {
+        await addProduct(input)
+      } catch {
+        return
+      }
       toast.add({
         title: "Termék létrehozva",
         description: input.name,
@@ -242,15 +251,26 @@ function ProductFormDialog({
         />
         {product ? <span className="sr-only">Szerkesztés</span> : "Új termék"}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
-        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+      <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-lg">
+        <form
+          key={
+            product
+              ? JSON.stringify([
+                  product.name,
+                  product.description,
+                  product.price,
+                  product.stock,
+                  product.categoryId,
+                ])
+              : "new"
+          }
+          onSubmit={handleSubmit}
+          className="flex flex-col gap-6"
+        >
           <DialogHeader>
             <DialogTitle>
               {product ? "Termék szerkesztése" : "Új termék"}
             </DialogTitle>
-            <DialogDescription>
-              A mentett adatok azonnal megjelennek a storefronton.
-            </DialogDescription>
           </DialogHeader>
           <FieldGroup>
             <Field>
@@ -263,6 +283,7 @@ function ProductFormDialog({
                 required
               />
             </Field>
+            {product ? <ProductImageUpload product={product} /> : null}
             <Field>
               <FieldLabel htmlFor={`${idPrefix}-description`}>
                 Leírás
@@ -339,8 +360,12 @@ function ProductFormDialog({
 function DeleteProductDialog({ product }: { product: Product }) {
   const [open, setOpen] = React.useState(false)
 
-  function handleDelete() {
-    deleteProduct(product.id)
+  async function handleDelete() {
+    try {
+      await deleteProduct(product.id)
+    } catch {
+      return
+    }
     setOpen(false)
     toast.add({
       title: "Termék törölve",
@@ -389,8 +414,8 @@ function DeleteCategoryDialog({
 }) {
   const [open, setOpen] = React.useState(false)
 
-  function handleDelete() {
-    if (!deleteCategory(category.id)) {
+  async function handleDelete() {
+    if (!(await deleteCategory(category.id).catch(() => false))) {
       toast.add({
         title: "A kategória nem törölhető",
         description: "Előbb töröld vagy mozgasd át a benne lévő termékeket.",
@@ -458,7 +483,7 @@ function CategoryColumn({
   products: Product[]
   allProducts: Product[]
 }) {
-  function handleDrop(event: React.DragEvent<HTMLDivElement>) {
+  async function handleDrop(event: React.DragEvent<HTMLDivElement>) {
     event.preventDefault()
     const productId = event.dataTransfer.getData("text/plain")
     const product = allProducts.find((item) => item.id === productId)
@@ -467,7 +492,11 @@ function CategoryColumn({
       return
     }
 
-    moveProduct(productId, category.id)
+    try {
+      await moveProduct(productId, category.id)
+    } catch {
+      return
+    }
     toast.add({
       title: "Termék áthelyezve",
       description: `${product.name} → ${category.name}`,
@@ -568,46 +597,12 @@ export function AdminPanel() {
   )
 
   return (
-    <div className="min-h-svh">
-      <header>
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-          <Item size="xs" className="w-auto">
-            <ItemMedia variant="icon">
-              <HugeiconsIcon icon={Store01Icon} strokeWidth={2} />
-            </ItemMedia>
-            <ItemContent>
-              <ItemTitle>SmartShop Admin</ItemTitle>
-              <ItemDescription className="hidden sm:flex">
-                LocalStorage katalóguskezelő
-              </ItemDescription>
-            </ItemContent>
-          </Item>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/"
-              className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-            >
-              <HugeiconsIcon
-                icon={ArrowLeft01Icon}
-                strokeWidth={2}
-                data-icon="inline-start"
-              />
-              <span className="hidden sm:inline">Storefront</span>
-            </Link>
-            <ThemeToggle />
-          </div>
-        </div>
-        <Separator />
-      </header>
-
+    <div className="w-full">
       <main className="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <Item className="w-auto" size="sm">
             <ItemContent>
               <ItemTitle>Katalóguskezelés</ItemTitle>
-              <ItemDescription>
-                Kategóriák, termékek és készlet egyetlen nézetben.
-              </ItemDescription>
             </ItemContent>
           </Item>
           <CategoryFormDialog />
@@ -637,16 +632,6 @@ export function AdminPanel() {
             </CardHeader>
           </Card>
         </div>
-
-        <Alert>
-          <HugeiconsIcon icon={InformationCircleIcon} strokeWidth={2} />
-          <AlertTitle>Mock admin · autentikáció nélkül</AlertTitle>
-          <AlertDescription>
-            Húzd a termékkártyákat másik kategóriába, vagy a szerkesztőben
-            válassz új kategóriát. Minden változás csak ebben a böngészőben
-            tárolódik.
-          </AlertDescription>
-        </Alert>
 
         {catalog.categories.length > 0 ? (
           <div className="grid items-start gap-5 lg:grid-cols-2 xl:grid-cols-3">

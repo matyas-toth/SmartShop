@@ -22,6 +22,7 @@ export type Product = {
   price: number
   stock: number
   icon: ProductIcon
+  image?: string | null
 }
 
 export type Catalog = {

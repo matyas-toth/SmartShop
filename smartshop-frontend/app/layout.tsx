@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toast"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
+import { ShopShell } from "@/components/shop-shell"
 
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-sans" })
 
@@ -16,7 +17,7 @@ const fontMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "SmartShop",
-  description: "Egyszerű, localStorage-alapú webshop MVP.",
+  description: "SmartShop webáruház",
 }
 
 export default function RootLayout({
@@ -37,7 +38,7 @@ export default function RootLayout({
       <body>
         <ThemeProvider>
           <TooltipProvider>
-            {children}
+            <ShopShell>{children}</ShopShell>
             <Toaster />
           </TooltipProvider>
         </ThemeProvider>

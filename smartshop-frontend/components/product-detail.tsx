@@ -1,17 +1,9 @@
 "use client"
 
-import {
-  DeliveryTruck02Icon,
-  PackageCheckIcon,
-  ShieldEnergyIcon,
-} from "@hugeicons/core-free-icons"
-import { HugeiconsIcon } from "@hugeicons/react"
 import Link from "next/link"
 
 import { ProductCartButton } from "@/components/product-actions"
 import { ProductIcon } from "@/components/product-icon"
-import { StoreHeader } from "@/components/store-header"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import {
   Breadcrumb,
@@ -42,40 +34,28 @@ import {
   Item,
   ItemContent,
   ItemDescription,
-  ItemGroup,
-  ItemMedia,
   ItemTitle,
 } from "@/components/ui/item"
-import { useCatalog } from "@/lib/catalog-store"
+import { useCatalog, useCatalogReady } from "@/lib/catalog-store"
+import { Skeleton } from "@/components/ui/skeleton"
 import { formatPrice, getStockLabel } from "@/lib/products"
 import { cn } from "@/lib/utils"
 
-const benefits = [
-  {
-    title: "Gyors kosárkezelés",
-    description: "A kosár tartalma azonnal frissül és helyben megmarad.",
-    icon: PackageCheckIcon,
-  },
-  {
-    title: "Mock kiszállítás",
-    description: "A szállítási folyamat egy későbbi mérföldkő része lesz.",
-    icon: DeliveryTruck02Icon,
-  },
-  {
-    title: "Biztonságos demó",
-    description: "Nincs valódi fizetés vagy külső adattovábbítás.",
-    icon: ShieldEnergyIcon,
-  },
-]
-
 export function ProductDetail({ slug }: { slug: string }) {
   const catalog = useCatalog()
+  const ready = useCatalogReady()
+  if (!ready)
+    return (
+      <main className="mx-auto grid max-w-7xl gap-6 p-6 md:grid-cols-2">
+        <Skeleton className="h-96" />
+        <Skeleton className="h-96" />
+      </main>
+    )
   const product = catalog.products.find((item) => item.slug === slug)
 
   if (!product) {
     return (
       <div className="min-h-svh">
-        <StoreHeader />
         <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <Empty>
             <EmptyHeader>
@@ -101,7 +81,6 @@ export function ProductDetail({ slug }: { slug: string }) {
 
   return (
     <div className="min-h-svh">
-      <StoreHeader />
       <main className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
         <Breadcrumb>
           <BreadcrumbList>
@@ -114,7 +93,9 @@ export function ProductDetail({ slug }: { slug: string }) {
             {category ? (
               <>
                 <BreadcrumbItem>
-                  <BreadcrumbLink render={<Link href={`/#${category.slug}`} />}>
+                  <BreadcrumbLink
+                    render={<Link href={`/category/${category.slug}`} />}
+                  >
                     {category.name}
                   </BreadcrumbLink>
                 </BreadcrumbItem>
@@ -130,7 +111,14 @@ export function ProductDetail({ slug }: { slug: string }) {
         <div className="grid gap-6 lg:grid-cols-2">
           <Card>
             <CardContent>
-              <ProductIcon icon={product.icon} ratio={1} size="lg" />
+              <ProductIcon
+                icon={product.icon}
+                image={product.image}
+                name={product.name}
+                ratio={1}
+                size="lg"
+                eager
+              />
             </CardContent>
           </Card>
 
@@ -154,26 +142,6 @@ export function ProductDetail({ slug }: { slug: string }) {
                   {getStockLabel(product.stock)} · {product.stock} db
                 </Badge>
               </Item>
-              <ItemGroup>
-                {benefits.map((benefit) => (
-                  <Item key={benefit.title} size="sm">
-                    <ItemMedia variant="icon">
-                      <HugeiconsIcon icon={benefit.icon} strokeWidth={1.5} />
-                    </ItemMedia>
-                    <ItemContent>
-                      <ItemTitle>{benefit.title}</ItemTitle>
-                      <ItemDescription>{benefit.description}</ItemDescription>
-                    </ItemContent>
-                  </Item>
-                ))}
-              </ItemGroup>
-              <Alert>
-                <AlertTitle>Demó termékoldal</AlertTitle>
-                <AlertDescription>
-                  A termék és a készlet az adminfelületről, localStorage-ban
-                  módosítható.
-                </AlertDescription>
-              </Alert>
             </CardContent>
             <CardFooter>
               <ProductCartButton

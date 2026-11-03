@@ -1,0 +1,19 @@
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: smartshop
+      POSTGRES_PASSWORD: smartshop_local
+      POSTGRES_DB: smartshop
+    ports:
+      - "127.0.0.1:54339:5432"
+    volumes:
+      - smartshop_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smartshop -d smartshop"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+volumes:
+  smartshop_data:

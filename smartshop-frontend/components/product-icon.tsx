@@ -8,6 +8,7 @@ import {
   Watch01Icon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
+import Image from "next/image"
 
 import { AspectRatio } from "@/components/ui/aspect-ratio"
 import type { ProductIcon as ProductIconName } from "@/lib/products"
@@ -25,10 +26,16 @@ const icons = {
 
 export function ProductIcon({
   icon,
+  image,
+  name = "",
+  eager = false,
   ratio = 3 / 2,
   size = "default",
 }: {
   icon: ProductIconName
+  image?: string | null
+  name?: string
+  eager?: boolean
   ratio?: number
   size?: "default" | "lg"
 }) {
@@ -36,13 +43,25 @@ export function ProductIcon({
     <AspectRatio
       ratio={ratio}
       className="flex items-center justify-center"
-      aria-hidden="true"
+      aria-hidden={image ? undefined : true}
     >
-      <HugeiconsIcon
-        icon={icons[icon] ?? PackageIcon}
-        strokeWidth={1.5}
-        className={cn(size === "lg" ? "size-24" : "size-16")}
-      />
+      {image ? (
+        <Image
+          src={image}
+          alt={name}
+          fill
+          loading={eager ? "eager" : "lazy"}
+          unoptimized
+          className="object-contain"
+          sizes="(max-width: 768px) 100vw, 50vw"
+        />
+      ) : (
+        <HugeiconsIcon
+          icon={icons[icon] ?? PackageIcon}
+          strokeWidth={1.5}
+          className={cn(size === "lg" ? "size-24" : "size-16")}
+        />
+      )}
     </AspectRatio>
   )
 }

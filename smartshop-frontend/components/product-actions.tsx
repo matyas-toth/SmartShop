@@ -7,6 +7,7 @@ import { Button, ButtonStateIcon } from "@/components/ui/button"
 import { toast } from "@/components/ui/toast"
 import { addToCart, removeFromCart, useCart } from "@/lib/cart-store"
 import { cn } from "@/lib/utils"
+import { useState } from "react"
 
 export function ProductCartButton({
   productId,
@@ -22,13 +23,17 @@ export function ProductCartButton({
   size?: "sm" | "default" | "lg"
 }) {
   const cart = useCart()
+  const [pending, setPending] = useState(false)
   const quantity =
     cart.find((item) => item.productId === productId)?.quantity ?? 0
   const isInCart = quantity > 0
 
-  function handleCartAction() {
+  async function handleCartAction() {
+    setPending(true)
     if (isInCart) {
-      removeFromCart(productId)
+      const ok = await removeFromCart(productId)
+      setPending(false)
+      if (!ok) return
       toast.add({
         title: "Eltávolítva a kosárból",
         description: productName,
@@ -37,7 +42,9 @@ export function ProductCartButton({
       return
     }
 
-    addToCart(productId)
+    const ok = await addToCart(productId)
+    setPending(false)
+    if (!ok) return
     toast.add({
       title: "Kosárba került",
       description: productName,
@@ -49,7 +56,7 @@ export function ProductCartButton({
     <Button
       variant={isInCart ? "secondary" : "default"}
       size={size}
-      disabled={disabled}
+      disabled={pending || (disabled && !isInCart)}
       className={cn("min-w-28", fullWidth && "w-full")}
       onClick={handleCartAction}
       aria-label={
