@@ -72,6 +72,7 @@ import {
 import { removeFromCart, updateCartQuantity, useCart } from "@/lib/cart-store"
 import { useCatalog } from "@/lib/catalog-store"
 import { formatPrice } from "@/lib/products"
+import { ShippingProgress } from "@/components/shipping-progress"
 
 const subscribeHydration = () => () => {}
 export function ThemeToggle() {
@@ -300,6 +301,7 @@ function CartSheet() {
         )}
 
         <SheetFooter>
+          {itemCount > 0 ? <ShippingProgress amount={total} /> : null}
           <Link href="/cart" className={buttonVariants()}>
             Kosár megtekintése
           </Link>

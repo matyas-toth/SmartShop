@@ -1,7 +1,6 @@
 "use client"
 import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
 import { refreshCart } from "@/lib/cart-store"
 export function OrderActions({
   id,
@@ -16,17 +15,9 @@ export function OrderActions({
 }) {
   const [message, setMessage] = useState("")
   const [pending, setPending] = useState(false)
-  const router = useRouter()
   useEffect(() => {
     void refreshCart().catch(() => {})
-    if (status !== "PENDING") return
-    let attempts = 0
-    const timer = setInterval(() => {
-      router.refresh()
-      if (++attempts >= 10) clearInterval(timer)
-    }, 3000)
-    return () => clearInterval(timer)
-  }, [status, router])
+  }, [status])
   return (
     <div className="flex flex-col gap-3">
       {canCancel && status === "PENDING" ? (

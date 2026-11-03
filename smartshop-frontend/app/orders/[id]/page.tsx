@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/table"
 import { buttonVariants } from "@/components/ui/button"
 import { OrderActions } from "@/components/order-actions"
+import { OrderTracking } from "@/components/order-tracking"
 import { AdminOrderPanel } from "@/components/admin-order-panel"
 import { orderStatusLabel } from "@/lib/order-status"
 import { formatPrice } from "@/lib/products"
@@ -95,8 +96,9 @@ export default async function OrderPage({
           </Link>
         </CardContent>
       </Card>
-      <div className="grid items-start gap-6 lg:grid-cols-[2fr_1fr]">
-        <div className="flex flex-col gap-6">
+      <OrderTracking id={id} token={query.token} status={order.status} />
+      <div className="grid min-w-0 grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <div className="flex min-w-0 flex-col gap-6">
           <Card>
             <CardHeader>
               <CardTitle>Rendelt termékek</CardTitle>
@@ -143,7 +145,7 @@ export default async function OrderPage({
             </CardContent>
           </Card>
         </div>
-        <div className="flex flex-col gap-6">
+        <div className="flex min-w-0 flex-col gap-6">
           <Card>
             <CardHeader>
               <CardTitle>Összesítő</CardTitle>

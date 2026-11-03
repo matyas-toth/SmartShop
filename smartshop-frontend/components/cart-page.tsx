@@ -19,6 +19,8 @@ import { Button, buttonVariants } from "@/components/ui/button"
 import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
 import { Input } from "@/components/ui/input"
 import { formatPrice } from "@/lib/products"
+import { ShippingProgress } from "@/components/shipping-progress"
+import { FREE_SHIPPING_THRESHOLD, SHIPPING_FEE } from "@/lib/shipping"
 export function CartPage() {
   const items = useCart()
   const ready = useCartReady()
@@ -105,6 +107,9 @@ export function CartPage() {
           <CardTitle>Összesítő</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
+          {ready && items.length > 0 ? (
+            <ShippingProgress amount={total} />
+          ) : null}
           <div className="flex justify-between gap-3">
             <span>Termékek</span>
             <span>{formatPrice(total)}</span>
@@ -114,16 +119,19 @@ export function CartPage() {
             <span>
               {!items.length
                 ? formatPrice(0)
-                : total >= 30000
+                : total >= FREE_SHIPPING_THRESHOLD
                   ? "Ingyenes"
-                  : formatPrice(1490)}
+                  : formatPrice(SHIPPING_FEE)}
             </span>
           </div>
           <div className="flex justify-between gap-3">
             <CardTitle>Összesen</CardTitle>
             <CardTitle>
               {formatPrice(
-                total + (total >= 30000 || !items.length ? 0 : 1490)
+                total +
+                  (total >= FREE_SHIPPING_THRESHOLD || !items.length
+                    ? 0
+                    : SHIPPING_FEE)
               )}
             </CardTitle>
           </div>

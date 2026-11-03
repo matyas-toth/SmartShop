@@ -1,6 +1,7 @@
 import { z } from "zod"
 import { db } from "@/lib/db"
 import type { Prisma } from "@/generated/prisma/client"
+import { FREE_SHIPPING_THRESHOLD, SHIPPING_FEE } from "@/lib/shipping"
 
 export const addressSchema = z.object({
   postalCode: z.string().regex(/^\d{4}$/),
@@ -87,7 +88,8 @@ export async function quote(tx: Tx, input: z.infer<typeof checkoutSchema>) {
         : coupon.amount
     )
   }
-  const shippingFee = subtotal - discount >= 30000 ? 0 : 1490
+  const shippingFee =
+    subtotal - discount >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE
   return {
     items,
     subtotal,

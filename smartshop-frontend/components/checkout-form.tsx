@@ -27,6 +27,8 @@ import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { formatPrice } from "@/lib/products"
+import { ShippingProgress } from "@/components/shipping-progress"
+import { FREE_SHIPPING_THRESHOLD, SHIPPING_FEE } from "@/lib/shipping"
 type Address = {
   id: string
   label: string
@@ -302,6 +304,9 @@ export function CheckoutForm() {
             <CardTitle>Rendelés összesítése</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-5">
+            <ShippingProgress
+              amount={validQuote ? totals.subtotal - totals.discount : subtotal}
+            />
             {items.map((item) => {
               const p = catalog.products.find((p) => p.id === item.productId)
               return p ? (
@@ -356,7 +361,9 @@ export function CheckoutForm() {
               <div className="flex justify-between gap-3">
                 <span>Szállítás</span>
                 <span>
-                  {subtotal >= 30000 ? "Ingyenes" : formatPrice(1490)}
+                  {subtotal >= FREE_SHIPPING_THRESHOLD
+                    ? "Ingyenes"
+                    : formatPrice(SHIPPING_FEE)}
                 </span>
               </div>
             )}

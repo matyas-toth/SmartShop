@@ -1,5 +1,20 @@
 # AI prompt napló
 
+## 2026-11-03 — Szállítási folyamatjelző és rendeléskövetés
+
+> 1. **Ingyenes szállítás folyamatjelző.** A kosárban mutatja, hogy „Még 4 010 Ft az ingyenes szállításig”, és termék hozzáadásakor azonnal frissül. A határ elérésekor sikeres állapotra vált.
+> 2. **Vizuális rendeléskövetés.** A rendelésoldalon megjelenik egy lépéssor: Fizetve → Összekészítés → Feladva → Kézbesítve. Az adminban állítod a státuszt, a vásárlói oldalon automatikusan továbblép a jelölés.
+>
+> Ezt készítsd el, az 1. ingyenes száll. folyamatjelző is legyen egy ilyen progressbar vagy ilyesmi egy szállítósautóval rajta ami ha betelik maxra akkor ingyenes a szállítás.
+
+## 2026-11-03 — Gyors demóextrák ötletelése
+
+> van szerinted valami mini extra amit gyors 5p alatt be tudnál rakni a projektbe, ami most a demón nagyot szólna? adj 3-4 ötletet ami közül választok
+
+## 2026-11-03 — Adminjog megadása
+
+> make "teszt@gmail.com" the admin please (hes a registered user)
+
 ## 2026-11-03 — Auth javítás és teljes webshopélmény
 
 > # ERROR
